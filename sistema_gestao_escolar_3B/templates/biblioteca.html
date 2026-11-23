@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Biblioteca | Gestão Escolar{% endblock %}
+{% block content %}
+<section class="hero biblioteca-hero">
+  <div>
+    <p class="etiqueta">BIBLIOTECA ESCOLAR</p>
+    <h1>Encontre a sua próxima leitura</h1>
+    <p>Pesquise o catálogo, consulte a disponibilidade e gerencie seus empréstimos em um só lugar.</p>
+  </div>
+  <div class="hero-icon" aria-hidden="true">⌁</div>
+</section>
+
+<section class="card busca-card">
+  <form class="busca" method="get" action="/biblioteca">
+    <label class="sr-only" for="busca">Buscar livros</label>
+    <input id="busca" name="busca" value="{{ busca }}" placeholder="Pesquisar por título, autor ou categoria">
+    <button type="submit">Pesquisar</button>
+    {% if busca %}<a class="botao secundario" href="/biblioteca" style="margin:0">Limpar</a>{% endif %}
+  </form>
+</section>
+
+{% if not session.get('usuario_id') %}
+<section class="card notice-card"><p class="etiqueta">ACESSO À BIBLIOTECA</p><h2>Entre para solicitar um empréstimo</h2><p class="muted">Você pode navegar pelo catálogo livremente. Faça login para reservar livros e acompanhar suas devoluções.</p><a class="botao" href="/login">Entrar no sistema</a></section>
+{% endif %}
+
+{% if session.get('usuario_id') and meus_emprestimos %}
+<section class="card">
+  <div class="section-heading"><div><p class="etiqueta">MEUS EMPRÉSTIMOS</p><h2>Leituras em andamento</h2></div></div>
+  <div class="grade grade-cards">
+    {% for emprestimo in meus_emprestimos %}
+    <article class="mini-card"><span class="status info">Em empréstimo</span><h3>{{ emprestimo.titulo }}</h3><p class="muted">{{ emprestimo.autor }}</p><p>Devolução prevista: <strong>{{ emprestimo.data_prevista_devolucao }}</strong></p>
+      <form method="post" action="/biblioteca/emprestimo/{{ emprestimo.id }}/devolver"><button class="botao secundario" type="submit">Registrar devolução</button></form>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="card">
+  <div class="section-heading"><div><p class="etiqueta">CATÁLOGO</p><h2>Livros disponíveis</h2></div><span class="muted">{{ livros|length }} título(s) encontrado(s)</span></div>
+  {% if livros %}
+  <div class="grade grade-cards livros-grid">
+    {% for livro in livros %}
+    <article class="mini-card livro-card">
+      <div class="livro-capa" aria-hidden="true">{{ livro.titulo[0]|upper }}</div>
+      <div><span class="status {{ 'success' if livro.disponiveis > 0 else 'error' }}">{{ livro.disponiveis }} disponível(is)</span><h3>{{ livro.titulo }}</h3><p class="muted">{{ livro.autor }}</p>
+      <p class="meta">{{ livro.categoria|default('Sem categoria', true) }}{% if livro.ano_publicacao %} · {{ livro.ano_publicacao }}{% endif %}</p>
+      {% if session.get('usuario_id') %}
+        {% if livro.disponiveis > 0 %}<form method="post" action="/biblioteca/livro/{{ livro.id }}/emprestar"><button type="submit">Solicitar empréstimo</button></form>{% else %}<button disabled>Indisponível</button>{% endif %}
+      {% else %}<a class="botao" href="/login">Entre para emprestar</a>{% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}<div class="empty-state"><p>Nenhum livro foi encontrado.</p><a href="/biblioteca">Ver todo o catálogo</a></div>{% endif %}
+</section>
+
+{% if session.get('tipo_usuario') in ['admin', 'funcionario'] %}
+{% if emprestimos_gerais %}
+<section class="card">
+  <div class="section-heading"><div><p class="etiqueta">CONTROLE DE EMPRÉSTIMOS</p><h2>Livros fora do acervo</h2></div><span class="status info">{{ emprestimos_gerais|length }} ativo(s)</span></div>
+  <table><thead><tr><th>Livro</th><th>Leitor</th><th>Empréstimo</th><th>Devolução prevista</th><th></th></tr></thead><tbody>{% for emprestimo in emprestimos_gerais %}<tr><td><strong>{{ emprestimo.titulo }}</strong><br><span class="meta">{{ emprestimo.autor }}</span></td><td>{{ emprestimo.leitor|default('Usuário não identificado') }}</td><td>{{ emprestimo.data_emprestimo }}</td><td>{{ emprestimo.data_prevista_devolucao }}</td><td><form method="post" action="/biblioteca/emprestimo/{{ emprestimo.id }}/devolver"><button class="botao secundario" type="submit" style="margin:0">Devolver</button></form></td></tr>{% endfor %}</tbody></table>
+</section>
+{% endif %}
+<section class="card">
+  <div class="section-heading"><div><p class="etiqueta">GESTÃO DO ACERVO</p><h2>Cadastrar livro</h2></div></div>
+  <form method="post" action="/biblioteca/livro/novo" class="form-grid">
+    <div><label for="titulo">Título *</label><input id="titulo" name="titulo" required></div>
+    <div><label for="autor">Autor *</label><input id="autor" name="autor" required></div>
+    <div><label for="categoria">Categoria</label><input id="categoria" name="categoria"></div>
+    <div><label for="isbn">ISBN</label><input id="isbn" name="isbn"></div>
+    <div><label for="ano_publicacao">Ano</label><input id="ano_publicacao" name="ano_publicacao" type="number" min="0" max="2100"></div>
+    <div><label for="quantidade_total">Exemplares *</label><input id="quantidade_total" name="quantidade_total" type="number" min="1" value="1" required></div>
+    <div class="form-action"><button type="submit">Adicionar ao catálogo</button></div>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Relatórios | Gestão Escolar{% endblock %}
+{% block content %}
+<section class="hero"><div><p class="etiqueta">ANÁLISE ESCOLAR</p><h1>Relatórios</h1><p>Acompanhe turmas, frequência e desempenho acadêmico com dados atualizados.</p></div><div class="hero-icon">▤</div></section>
+<section class="card"><div class="grade grade-cards"><a class="mini-card" href="/relatorio/turmas"><p class="etiqueta">ORGANIZAÇÃO</p><h2>Turmas</h2><p class="muted">Cursos, professores, vagas e alunos por turma.</p></a><a class="mini-card" href="/relatorio/frequencia"><p class="etiqueta">ACOMPANHAMENTO</p><h2>Frequência</h2><p class="muted">Presenças e percentual por aluno.</p></a><a class="mini-card" href="/relatorio/desempenho"><p class="etiqueta">AVALIAÇÃO</p><h2>Desempenho</h2><p class="muted">Notas e médias lançadas por matéria.</p></a></div></section>
+{% endblock %}

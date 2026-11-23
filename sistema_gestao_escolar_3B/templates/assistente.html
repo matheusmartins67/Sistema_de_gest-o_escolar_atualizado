@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Assistente | Gestão Escolar{% endblock %}
+{% block content %}
+<section class="card assistente-cabecalho">
+  <div>
+    <p class="etiqueta">ASSISTENTE INTELIGENTE</p>
+    <h1>Como posso ajudar?</h1>
+    <p class="muted">Tire dúvidas sobre o sistema e consulte somente as informações autorizadas do seu perfil.</p>
+  </div>
+</section>
+
+<section class="card chat-card" aria-label="Conversa com o assistente">
+  <div id="mensagens" class="mensagens" aria-live="polite">
+    <article class="mensagem assistente">
+      <strong>Assistente Escolar</strong>
+      <p>Olá! Posso orientar sobre turmas, matrículas, notas, frequência e os recursos disponíveis para o seu perfil.</p>
+    </article>
+  </div>
+  <div class="sugestoes" aria-label="Perguntas sugeridas">
+    <button type="button" class="sugestao">Como matricular um aluno?</button>
+    {% if session.get('tipo_usuario') == 'aluno' %}
+    <button type="button" class="sugestao">Minhas notas</button>
+    <button type="button" class="sugestao">Minha frequência</button>
+    {% elif session.get('tipo_usuario') == 'professor' %}
+    <button type="button" class="sugestao">Minhas turmas</button>
+    <button type="button" class="sugestao">Como lançar notas?</button>
+    {% else %}
+    <button type="button" class="sugestao">Como cadastrar um aluno?</button>
+    <button type="button" class="sugestao">Como criar uma turma?</button>
+    {% endif %}
+  </div>
+  <form id="formulario-chat" class="formulario-chat">
+    <label class="sr-only" for="pergunta">Sua pergunta</label>
+    <textarea id="pergunta" name="pergunta" rows="2" maxlength="1000" required placeholder="Digite sua pergunta sobre o sistema..."></textarea>
+    <button id="enviar" type="submit">Enviar</button>
+  </form>
+  <p class="muted aviso-chat">Não envie senhas, CPF completo ou outros dados sensíveis.</p>
+</section>
+
+<script>
+(() => {
+  const form = document.getElementById('formulario-chat');
+  const entrada = document.getElementById('pergunta');
+  const mensagens = document.getElementById('mensagens');
+  const enviar = document.getElementById('enviar');
+
+  function adicionarMensagem(texto, tipo, titulo) {
+    const artigo = document.createElement('article');
+    artigo.className = `mensagem ${tipo}`;
+    const nome = document.createElement('strong');
+    nome.textContent = titulo;
+    const conteudo = document.createElement('p');
+    conteudo.textContent = texto;
+    artigo.append(nome, conteudo);
+    mensagens.appendChild(artigo);
+    mensagens.scrollTop = mensagens.scrollHeight;
+  }
+
+  async function perguntar(texto) {
+    const pergunta = texto.trim();
+    if (!pergunta) return;
+    adicionarMensagem(pergunta, 'usuario', 'Você');
+    entrada.value = '';
+    enviar.disabled = true;
+    enviar.textContent = 'Enviando...';
+    try {
+      const resposta = await fetch('/api/assistente/perguntar', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({pergunta})
+      });
+      const dados = await resposta.json();
+      const sufixo = dados.provedor === 'openai' ? ' · IA conectada' : ' · Assistência local';
+      adicionarMensagem(dados.resposta || dados.erro || 'Não foi possível responder agora.', 'assistente', `Assistente Escolar${sufixo}`);
+    } catch (erro) {
+      adicionarMensagem('Não foi possível conectar ao assistente. Atualize a página e tente novamente.', 'assistente', 'Assistente Escolar');
+    } finally {
+      enviar.disabled = false;
+      enviar.textContent = 'Enviar';
+      entrada.focus();
+    }
+  }
+
+  form.addEventListener('submit', (evento) => { evento.preventDefault(); perguntar(entrada.value); });
+  document.querySelectorAll('.sugestao').forEach((botao) => botao.addEventListener('click', () => perguntar(botao.textContent)));
+})();
+</script>
+{% endblock %}
